@@ -1,8 +1,9 @@
 class Business:
+    stockData = None
 
-    def __init__(self, name="", UUID=-1, correlationRating=-1, stockData=None):
+    def __init__(self, uuid=-1, name="", correlationRating=-1, stockData=None):
         self.name = name
-        self.UUID = UUID
+        self.uuid = uuid
         self.correlationRating = correlationRating
         self.stockData = stockData
 
@@ -11,3 +12,6 @@ class Business:
 
     def getStockData(self):
         return self.stockData
+
+    def updateStockData(self):
+

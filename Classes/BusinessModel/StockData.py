@@ -2,33 +2,31 @@ import datetime as dt
 
 
 class StockUnit:
-    def __int__(self, price, timestamp):
+    price = -1
+    timestamp = -1
+    uuid = -1
+    s_id = -1
+
+    def __init__(self, s_id=-1, uuid=-1, price=-1, timestamp=-1):
         self.price = price
         self.timestamp = timestamp
+        self.uuid = uuid
+        self.s_id = s_id
 
+    def getDatetime(self):
+        return dt.datetime.fromisoformat(self.timestamp)
 
-class StockData:
-    uuid = -1
-    stockUnitList = []
-
-    def __int__(self, uuid=-1, data=None):
+    def updateFromTuple(self, stockTuple):
         """
-
-        @param uuid: UUID of the stock/buisness index
-        @param data:
+        Function updates the StockUnit from a Tuple in the correct format (uuid, price, timestamp)
+        @param stockTuple:
         @return:
         """
-        self.uuid = uuid
-        if data is not None:
-            self.data = data
+        self.s_id = stockTuple[0]
+        self.uuid = stockTuple[1]
+        self.price = stockTuple[2]
+        self.timestamp = stockTuple[3]
 
-    def updateStock(self, db_instance):
-        """
-        Function takes a db_instance and updates the corresponding database stock
-        @param db_instance:
-        @return: True if stock is successfully updated. False if it is not.
-        """
-        if db_instance:
-            return True
-        else:
-            return False
+    def __str__(self):
+        return "sid: " + self.s_id.__str__() + ": uuid: " + self.uuid.__str__() + ": price: " + self.price.__str__() + ": timestamp: " + self.timestamp.__str__()
+

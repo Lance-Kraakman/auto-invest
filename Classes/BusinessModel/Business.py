@@ -5,7 +5,6 @@ class Business:
         self.name = name
         self.uuid = uuid
         self.correlationRating = correlationRating
-        self.stockData = stockData
 
     def setStockData(self, stockData):
         self.stockData = stockData

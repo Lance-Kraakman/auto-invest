@@ -5,15 +5,15 @@
 import sqlite3 as sq
 
 
-class Singleton:
-    """
-        Implementing singleton design pattern using new method
-        __new__ is called every time a object is instantiated
-    """
-    def __new__(cls, *args, **kwargs):
-        if not hasattr(cls, 'instance'):
-            cls.instance = super(Database, cls).__new__(cls)
-        return cls.instance
+def Singleton(class_):
+    instances = {}
+
+    def getinstance(*args, **kwargs):
+        if class_ not in instances:
+            instances[class_] = class_(*args, **kwargs)
+        return instances[class_]
+
+    return getinstance
 
 
 @Singleton
@@ -23,7 +23,7 @@ class Database:
         'instance'
     """
     __database_conn = None
-    __database_path = "../../data/AnalyzerData.db"
+    __database_path = "/home/lance/PycharmProjects/auto-invest/data/AnalyzerData.db"
     __database_cursor = None
 
     def __init__(self, username, password):
@@ -44,11 +44,10 @@ class Database:
             self.__database_conn = sq.connect(self.getDatabasePath())
             self.__database_cursor = self.getConn().cursor()
         except sq.Error as error:
-            print("Error Opening Database or connecting cursor", error)
+            print("Error Opening Database or connecting cursor")
+            print(error)
         finally:
-            print("\nClosing Database Connection\n")
-            if self.getConn():
-                self.closeDatabase()
+            print("\nDatabase Connection Error\n")
 
     def closeDatabase(self):
         try:
@@ -57,7 +56,4 @@ class Database:
             print("Error Closing Database", error)
 
     def queryDatabase(self, queryString):
-        self.getCurs().execute(queryString)
-
-
-
+        return self.getCurs().execute(queryString)

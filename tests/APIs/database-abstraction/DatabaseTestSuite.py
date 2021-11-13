@@ -1,27 +1,31 @@
-"""
-    This class handles everything to do with database abstraction.
-    All we should do is call getDatabase to get the instance of our database
-"""
-import sqlite3 as sq
+import unittest
+from APIs.DatabaseAbstraction import database as myDb
 
 
-class Database():
+class TestDatabase(unittest.TestCase):
 
-    __database_instance = None
-    __database_path = "../../data/AnalyzerData.db"
+    def testSingleton(self):
+        # Create first class instance
+        db1 = myDb.Database("Slim", "Shady")
+        db1.openDatabase()
+        # Create Another instance
+        db2 = myDb.Database("Slim", "Poo")
 
-    def __init__(self, username, password):
-        self.username = username
-        self.password = password
+        print("db1 info: " + db1.getConn().__str__())
+        print("db2 info: " + db2.getConn().__str__())
 
-    def get_db_instance(self):
-        return self.__database_instance
+        self.assertEqual(db1.getConn(), db2.getConn())
 
-    def openDatabase(self):
-        pass
+        db2.closeDatabase()
 
-    def closeDatabase(self):
-        pass
+    def testQuery(self):
+        db = myDb.Database("Slim", "Shady")
+        db.openDatabase()
 
-    def initDatabaseInstance(self):
-        pass
+        print(db.queryDatabase("select sqlite_version();"))
+
+        db.closeDatabase()
+
+
+if __name__ == 'main':
+    unittest.main()

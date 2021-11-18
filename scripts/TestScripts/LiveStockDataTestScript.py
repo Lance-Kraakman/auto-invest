@@ -7,20 +7,26 @@ import threading
 import time
 
 
+
 def testScript():
     # Creates a liveStockData object all ticker queues are of length 10
     # If the queues are long it will take a longer time to return to the "true live data"
-    liveStockData = Business.LiveStockData(stockQueueLength=10)
+    liveStockData = Business.LiveStockData()
 
     liveStockData.addTicker("BINANCE:BTCUSDT")
     liveStockData.addTicker("BINANCE:AAVEBTC")
+    liveStockData.startStockDataConnection() # Testing this can be used multiple times between.
     liveStockData.addTicker("BINANCE:ACMBTC")
-
     liveStockData.startStockDataConnection()
 
+    # Get stock data queues
     acmbtcQueue = liveStockData.getStockQueue("BINANCE:ACMBTC")
     aavebtcQueue = liveStockData.getStockQueue("BINANCE:AAVEBTC")
     btcnQueue = liveStockData.getStockQueue("BINANCE:BTCUSDT")
+
+    liveStockData.startStockDataConnection()
+    liveStockData.startStockDataConnection()
+
 
     queueArray = [acmbtcQueue, aavebtcQueue, btcnQueue]
 
@@ -28,7 +34,10 @@ def testScript():
 
         for stockQueue in queueArray:
             try:
-                print("Recvd Data: " + stockQueue.get_nowait().__str__())
+                dataRecvd = stockQueue.get_nowait()
+                print("Recvd Data: " + dataRecvd.price.__str__())
+                print("Recvd Data: " + dataRecvd.volume.__str__())
+
             except Exception:
                 pass
 

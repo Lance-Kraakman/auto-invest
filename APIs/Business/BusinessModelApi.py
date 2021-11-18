@@ -1,5 +1,5 @@
 from APIs.DatabaseAbstraction import database as db
-from Classes.BusinessModel import StockData as sd
+from Classes.BusinessModel import LiveStockData as sd
 
 """
     This is an API for our Business model data

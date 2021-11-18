@@ -26,6 +26,8 @@ class Database:
     __database_path = "/home/lance/PycharmProjects/auto-invest/data/AnalyzerData.db"
     __database_cursor = None
 
+    RETURN_FAIL = 0
+
     def __init__(self, username, password):
         self.username = username
         self.password = password
@@ -46,8 +48,6 @@ class Database:
         except sq.Error as error:
             print("Error Opening Database or connecting cursor")
             print(error)
-        finally:
-            print("\nDatabase Connection Error\n")
 
     def closeDatabase(self):
         try:
@@ -55,5 +55,22 @@ class Database:
         except sq.Error as error:
             print("Error Closing Database", error)
 
-    def queryDatabase(self, queryString):
-        return self.getCurs().execute(queryString)
+    def queryDatabase(self, queryString, params=None):
+        try:
+            self.getCurs().execute(queryString, params)
+            self.getConn().commit()
+        except sq.Error as error:
+            print("sqlite3 operation error", error.__str__())
+            return False
+        return True
+
+    # Data Query means we are asking the database for data
+    def dataQueryDatabase(self, queryString, params=None):
+        try:
+            self.getCurs().execute(queryString, params)
+            data = self.getCurs().fetchall()
+        except sq.Error as error:
+            print("operation error: " + error.__str__())
+            return None
+        return data
+

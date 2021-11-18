@@ -1,42 +1,39 @@
+from asyncio import QueueEmpty
+import multiprocessing as mp
+from queue import Empty
+
 from Classes.BusinessModel import Business
 import threading
-
-condition = threading.Condition()
-flag = False
+import time
 
 
 def testScript():
-    liveStockData = Business.LiveStockData(10)
+    # Creates a liveStockData object all ticker queues are of length 10
+    # If the queues are long it will take a longer time to return to the "true live data"
+    liveStockData = Business.LiveStockData(stockQueueLength=10)
 
     liveStockData.addTicker("BINANCE:BTCUSDT")
+    liveStockData.addTicker("BINANCE:AAVEBTC")
+    liveStockData.addTicker("BINANCE:ACMBTC")
+
     liveStockData.startStockDataConnection()
 
-    # bitCoinDataQueue = liveStockData.getStockQueue("BINANCE:BTCUSDT")
-    print("Hi")
+    acmbtcQueue = liveStockData.getStockQueue("BINANCE:ACMBTC")
+    aavebtcQueue = liveStockData.getStockQueue("BINANCE:AAVEBTC")
+    btcnQueue = liveStockData.getStockQueue("BINANCE:BTCUSDT")
 
-    global flag
+    queueArray = [acmbtcQueue, aavebtcQueue, btcnQueue]
 
     while True:
-        print(flag)
-        if flag:
-            print("yeet")
-            break
 
+        for stockQueue in queueArray:
+            try:
+                print("Recvd Data: " + stockQueue.get_nowait().__str__())
+            except Exception:
+                pass
 
-def checkExit():
-    global flag
-    while True:
-        inp = input("Enter X to exit")
-        if inp.lower() == "x":
-            flag = True
-            break
+        time.sleep(0.5)
 
 
 if __name__ == "__main__":
-    thread1 = threading.Thread(target=testScript, args=())
-    thread2 = threading.Thread(target=checkExit, args=())
-
-    thread1.start()
-    thread2.start()
-
-
+    testScript()

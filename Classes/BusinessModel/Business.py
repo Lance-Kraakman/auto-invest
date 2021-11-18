@@ -2,8 +2,7 @@ import math
 import requests
 import websocket
 import socket
-import queue
-import subprocess
+import multiprocessing as mp
 import json
 
 
@@ -44,10 +43,12 @@ class MarketCalculator:
 
 class Business:
 
-    def __init__(self, uuid=-1, name="", tradeName=""):
+    def __init__(self, uuid=-1, name="", tradeName="", tradingStartHours=None, tradingEndHours=None):
         self.name = name
         self.tradeName = tradeName
         self.uuid = uuid
+        self.tradingStartHours = tradingStartHours
+        self.tradingEndHours = tradingEndHours
 
 
 # This class provides access to live stock data
@@ -55,15 +56,17 @@ class LiveStockData:
     """
     Class maintains a web-socket with finnhub to get live stock data.
     Live stock data is stored in tuples as {ticker_str, stockQueue}.
-    See Example script LiveStockDataTest to see useage and functionality
+    See Example script LiveStockDataTest to see usage and functionality
+
+    Note: The ticker represents a business code on the stock market.
     """
 
-    __MAX_STOCK_QUEUE_LENGTH = 0  # Max length of the live stock data queue
-    __stockQueueTuples = []  # List of all of the queues of stock data and associated ticker strings {ticker_str, stockQueue}
-    __tickerList = []  # List of all of the ticker string codes
+    __MAX_STOCK_QUEUE_LENGTH = 10  # Max length of the live stock data queue
+    __stockQueueDict = {}  # List of all of the queues of stock data and associated ticker strings {ticker_str, stockQueue}
+
+    __socketProcess = None  # socket process to store the sockets process details.
 
     def __init__(self, stockQueueLength):
-        websocket.enableTrace(False)
         self.ws = None
         self.id = 0
         self.__MAX_STOCK_QUEUE_LENGTH = stockQueueLength
@@ -73,51 +76,54 @@ class LiveStockData:
         Creates the connection to the finnhub livestock data, runs the connection as a sub-process
         @return:
         """
-        self.ws = websocket.WebSocketApp("wss://ws.finnhub.io?token=c6aqgrqad3ieq36ru6j0",
-                                         on_message=self.on_message, on_error=self.on_error, on_close=self.on_close)
+        websocket.enableTrace(True)
+        self.ws = websocket.WebSocketApp("wss://ws.finnhub.io?token=c6aqgrqad3ieq36ru6j0", on_message=self.on_message,
+                                         on_error=self.on_error, on_close=self.on_close)
 
         self.ws.on_open = self.on_open
+        self.__socketProcess = mp.Process(target=self.ws.run_forever)
+        self.__socketProcess.start()
 
-    def liveDataThreadLoop(self):
-        self.ws.run_forever()
+    def stopDataConnection(self):
+        self.__socketProcess.terminate()  # terminate current process
 
     def addTicker(self, ticker_str):
-        """
-        pass in a ticker str and add a ticker tuple to a list with an ID which is a "static class member"
-        @param ticker_str:
-        @return:
-        """
-        self.__tickerList.append(ticker_str)
-
-    def __addStockQueue(self, ticker_string):
         """
         Add's a tuple {ticker_str, queue} to the list of stock queue tuples
         @param ticker_string:
         @return:
         """
-        self.__stockQueueTuples.append({ticker_string, queue.Queue(30)})
+        self.__stockQueueDict[ticker_str] = mp.Queue(self.__MAX_STOCK_QUEUE_LENGTH)  # Put the queue here
 
     def getStockQueue(self, ticker_string):
         """
         @param ticker_string:
         @return: stock queue object associated with the ticker string
         """
-        for tickerTuple in self.__stockQueueTuples:
-            if tickerTuple[0] == ticker_string:
-                return tickerTuple[1]
-        return None
+        try:
+            return self.__stockQueueDict[ticker_string]
+        except KeyError:
+            print("KEY ERROR NO STOCK QUEUE OF THAT TYPE")
+            return None
 
-    def getAllStockQueueTuples(self):
-        return self.__stockQueueTuples
-
+    def getAllStockQueueDict(self):
+        return self.__stockQueueDict
 
     def on_message(self, ws, message):
-        # recvdData = json.loads(message)
-        # for itm in recvdData['data']:
-        #     self.stockDataQueue.put(itm)
-        # readQueue = self.stockDataQueue.get_nowait()
-        # print(readQueue)
-        pass
+        recvdData = json.loads(message)
+        print(recvdData)
+        try:
+            for itm in recvdData['data']:
+                tickerRcvd = itm['s']
+                queueToAppend = self.getStockQueue(tickerRcvd)
+                try:
+                    queueToAppend.put(itm)  # appends the data to the queue
+                except Exception as e:
+                    print(e)
+        except KeyError:
+            print("Key error Exception")
+        except Exception:
+            print("Undetected Exception")
 
     def on_error(self, ws, error):
         pass
@@ -131,11 +137,8 @@ class LiveStockData:
         @param ws:
         @return:
         """
-        i = 0
-        for ticker_str in self.__tickerList:
-            ws.send(('{"type":"subscribe","symbol":"BINANCE:%s"}' % ticker_str))
-            self.__stockQueueTuples.append(ticker_str)
-            i = i + 1
+        for key, val in self.__stockQueueDict.items():
+            ws.send(('{"type":"subscribe","symbol":"%s"}' % key))
 
 
 class AnalyzedBusiness(Business, LiveStockData):

@@ -56,13 +56,32 @@ class Business:
 
 class AnalyzedBusiness(Business):
     marketCalculator = MarketCalculator()
-    stockData = Stock.LiveStockData()
 
-    def __init__(self, name="", uuid=-1, tradeName=""):
+    def __init__(self, name="", uuid=-1, tradeName="", liveStockData=Stock.LiveStockData()):
         Business.__init__(self, uuid=uuid, name=name, tradeName=tradeName)
 
+        self.liveStockData = liveStockData
+        self.initLiveData(self.tradeName)
         self._high_sell = -1
         self._low_sell = -1
 
     def __str__(self):
         return self.tradeName
+
+    def initLiveData(self):
+        self.liveStockData.addTicker(self.tradeName)
+
+    def getStockDataQueue(self):
+        return self.liveStockData.getStockDataQueue(self.tradeName)
+
+    def readLiveData(self):
+        """
+
+        @return: None if no data is read when polling, StockData Object if data object is available from the queue
+        """
+        pass
+
+
+
+
+

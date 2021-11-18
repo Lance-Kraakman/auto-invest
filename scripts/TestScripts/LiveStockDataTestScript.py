@@ -2,18 +2,19 @@ from asyncio import QueueEmpty
 import multiprocessing as mp
 from queue import Empty
 
-from Classes.BusinessModel import Business
+from Classes.BusinessModel import Business, Stock
 import threading
 import time
 
 
-
 def testScript():
+    """
+    Test script to check our live stock data object
+    """
     # Creates a liveStockData object all ticker queues are of length 10
     # If the queues are long it will take a longer time to return to the "true live data"
-    liveStockData = Business.LiveStockData()
+    liveStockData = Stock.LiveStockData()
 
-    liveStockData.addTicker("BINANCE:BTCUSDT")
     liveStockData.addTicker("BINANCE:AAVEBTC")
     liveStockData.startStockDataConnection() # Testing this can be used multiple times between.
     liveStockData.addTicker("BINANCE:ACMBTC")
@@ -22,11 +23,13 @@ def testScript():
     # Get stock data queues
     acmbtcQueue = liveStockData.getStockQueue("BINANCE:ACMBTC")
     aavebtcQueue = liveStockData.getStockQueue("BINANCE:AAVEBTC")
-    btcnQueue = liveStockData.getStockQueue("BINANCE:BTCUSDT")
 
-    liveStockData.startStockDataConnection()
-    liveStockData.startStockDataConnection()
+    Stock.LiveStockData.startStockDataConnection()
 
+    liveStockDataClassTwo = Stock.LiveStockData()
+    liveStockDataClassTwo.addTicker("BINANCE:BTCUSDT")
+    liveStockDataClassTwo.startStockDataConnection()
+    btcnQueue = liveStockDataClassTwo.getStockQueue("BINANCE:BTCUSDT")
 
     queueArray = [acmbtcQueue, aavebtcQueue, btcnQueue]
 

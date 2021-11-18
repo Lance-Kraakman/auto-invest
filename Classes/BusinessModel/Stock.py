@@ -1,3 +1,5 @@
+import time
+
 import websocket
 import multiprocessing as mp
 import json
@@ -15,8 +17,18 @@ class StockData:
         self.volume = volume
 
 
+class LiveStockData(StockData):
+    def __init__(self, ticker, time, price, volume):
+        super().__init__(ticker=ticker,time=time, price=price, volume=volume)
+        self.__stockDataApi = StockDataAPI()
+
+    def initLiveStockData(self):
+        self.__stockDataApi.addTicker(self.ticker)
+
+
+
 # This class provides access to live stock data
-class LiveStockData:
+class StockDataAPI:
     """
     Class maintains a web-socket with finnhub to get live stock data.
     Live stock data is stored in tuples as {ticker_str, stockQueue}.
@@ -29,35 +41,37 @@ class LiveStockData:
     __stockQueueDict = {}  # List of all of the queues of stock data and associated ticker strings {ticker_str, stockQueue}
     __socketProcess = None  # socket process object to be run as a separate process
     __connectionStatusFlag = False
-    socketTracing = True # Set socket tracing to True if you need to debug the web-socket
+    socketTracing = True  # Set socket tracing to True if you need to debug the web-socket
+    ws = None
 
     def __init__(self):
-        self.ws = None
-        self.id = 0
+        pass
 
     def startStockDataConnection(self):
         """
         Creates the connection to the finnhub livestock data, runs the connection as a sub-process
         @return:
         """
-        if LiveStockData.__connectionStatusFlag:  # If there is already another connection we should restart connection to append all tickers
+        if StockDataAPI.__connectionStatusFlag:  # If there is already another connection we should restart connection to append all tickers
             self.stopDataConnection()
-            self.ws = None
 
-        print("73333333333333333333333333333333333333333333333333333333")
         websocket.enableTrace(self.socketTracing)
         self.ws = websocket.WebSocketApp("wss://ws.finnhub.io?token=c6aqgrqad3ieq36ru6j0", on_message=self.on_message,
-                                         on_error=self.on_error, on_close=self.on_close)
+                                         on_error=self.on_error, on_close=self.on_close, on_open=self.on_open)
 
         self.ws.on_open = self.on_open
         self.__socketProcess = mp.Process(target=self.ws.run_forever)
         self.__socketProcess.start()
         # Set flag so we only do this if disconnected across all instances!
-        LiveStockData.__connectionStatusFlag = True
+        StockDataAPI.__connectionStatusFlag = True
 
     def stopDataConnection(self):
-        self.__socketProcess.terminate()  # terminate current process
-        LiveStockData.__connectionStatusFlag = False
+        if self.ws is not None:
+            self.ws.close()
+            self.ws = None
+            self.__socketProcess.terminate()
+            time.sleep(2)
+            self.__socketProcess.close()
 
     def setMaxStockQueueLength(self, max_length):
         self.__MAX_STOCK_QUEUE_LENGTH = max_length
@@ -69,7 +83,9 @@ class LiveStockData:
         @param ticker_str:
         @return:
         """
-        self.__stockQueueDict[ticker_str] = mp.Queue(self.__MAX_STOCK_QUEUE_LENGTH)  # Put the queue here
+        print("Adding Ticker : %s" % ticker_str)
+        StockDataAPI.__stockQueueDict[ticker_str] = mp.Queue(self.__MAX_STOCK_QUEUE_LENGTH)  # Put the queue here
+        print(StockDataAPI.__stockQueueDict.__str__())
 
     def getStockQueue(self, ticker_string):
         """
@@ -77,13 +93,13 @@ class LiveStockData:
         @return: stock queue object associated with the ticker string
         """
         try:
-            return self.__stockQueueDict[ticker_string]
+            return StockDataAPI.__stockQueueDict[ticker_string]
         except KeyError:
             print("KEY ERROR NO STOCK QUEUE OF THAT TYPE")
             return None
 
     def getAllStockQueueDict(self):
-        return self.__stockQueueDict
+        return StockDataAPI.__stockQueueDict
 
     def on_message(self, ws, message):
         recvdData = json.loads(message)
@@ -114,5 +130,7 @@ class LiveStockData:
         @param ws:
         @return:
         """
-        for key, val in self.__stockQueueDict.items():
+        print(StockDataAPI.__stockQueueDict.__str__())
+        for key, val in StockDataAPI.__stockQueueDict.items():
+            print("KEY %s" % key)
             ws.send(('{"type":"subscribe","symbol":"%s"}' % key))

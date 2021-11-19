@@ -1,30 +1,8 @@
 import time
 
 import websocket
-import multiprocessing as mp
+import multiprocessing as mp, queue
 import json
-
-
-class StockData:
-    """
-    Class to declare a stock data object
-    """
-
-    def __init__(self, ticker, time, price, volume):
-        self.ticker = ticker
-        self.time = time
-        self.price = price
-        self.volume = volume
-
-
-class LiveStockData(StockData):
-    def __init__(self, ticker, time, price, volume):
-        super().__init__(ticker=ticker,time=time, price=price, volume=volume)
-        self.__stockDataApi = StockDataAPI()
-
-    def initLiveStockData(self):
-        self.__stockDataApi.addTicker(self.ticker)
-
 
 
 # This class provides access to live stock data
@@ -56,19 +34,20 @@ class StockDataAPI:
             self.stopDataConnection()
 
         websocket.enableTrace(self.socketTracing)
-        self.ws = websocket.WebSocketApp("wss://ws.finnhub.io?token=c6aqgrqad3ieq36ru6j0", on_message=self.on_message,
+        StockDataAPI.ws = websocket.WebSocketApp("wss://ws.finnhub.io?token=c6aqgrqad3ieq36ru6j0", on_message=self.on_message,
                                          on_error=self.on_error, on_close=self.on_close, on_open=self.on_open)
 
-        self.ws.on_open = self.on_open
-        self.__socketProcess = mp.Process(target=self.ws.run_forever)
+        StockDataAPI.ws.on_open = self.on_open
+        self.__socketProcess = mp.Process(target=StockDataAPI.ws.run_forever)
         self.__socketProcess.start()
         # Set flag so we only do this if disconnected across all instances!
         StockDataAPI.__connectionStatusFlag = True
 
     def stopDataConnection(self):
-        if self.ws is not None:
-            self.ws.close()
-            self.ws = None
+        if StockDataAPI.ws is not None:
+            StockDataAPI.ws.close()
+            StockDataAPI.ws = None
+        if self.__socketProcess is not None:
             self.__socketProcess.terminate()
             time.sleep(2)
             self.__socketProcess.close()
@@ -111,6 +90,9 @@ class StockDataAPI:
                 try:
                     stockData = StockData(ticker=itm['s'], time=itm['t'], price=itm['p'], volume=itm['v'])
                     queueToAppend.put(stockData)  # appends the data to the queue
+                except queue.Full: # If the queue is full remove the first item and append the next data point!
+                    queueToAppend.get_nowait()
+                    queueToAppend.put(stockData)  # appends the data to the queue
                 except Exception as e:
                     print(e)
         except KeyError:
@@ -134,3 +116,65 @@ class StockDataAPI:
         for key, val in StockDataAPI.__stockQueueDict.items():
             print("KEY %s" % key)
             ws.send(('{"type":"subscribe","symbol":"%s"}' % key))
+
+
+class Stock:
+    """
+    Class to declare a stock data object
+    """
+
+    def __init__(self, ticker, time, price, volume):
+        self.ticker = ticker
+        self.time = time
+        self.price = price
+        self.volume = volume
+
+    def updateStock(self, data):
+        try:
+
+            self.ticker = data.ticker
+            self.time = data.time
+            self.price = data.price
+            self.volume = data.volume
+        except Exception as err:
+            print(data.__str__())
+            print(err.__str__())
+            print("FAILED TO UPDATE STOCK ")
+
+    def __str__(self):
+        return "\nticker : {0}, time : {1}, price : {2}, volume : {3}".format(self.ticker, self.time, self.price, self.volume)
+
+
+class StockData(Stock):
+    """
+        Live Stock Data Object. ALL Live stock data objects need to be created and initialized before the
+        startLiveDataService() function is called.
+    """
+    __stockDataApi = StockDataAPI()
+    __apiServiceStarted = False
+
+    def __init__(self, ticker, time=-1, price=-1, volume=-1):
+        super().__init__(ticker=ticker, time=time, price=price, volume=volume)
+        self.stockQueue = None
+
+    def initStockData(self):
+        StockData.__stockDataApi.addTicker(self.ticker)
+        self.stockQueue = StockData.__stockDataApi.getStockQueue(self.ticker)
+
+    def updateData(self):
+        try:
+            data = self.stockQueue.get_nowait()
+        except queue.Empty:
+            data = None
+        except Exception as err:
+            data = None
+            print("Other Exception Occured - Have you called initStockData?")
+            print(err.__str__())
+
+        if data is not None:
+            self.updateStock(data)
+
+    @classmethod
+    def startLiveDataService(cls):
+        # Start the live data connection
+        StockData.__stockDataApi.startStockDataConnection()

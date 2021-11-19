@@ -57,22 +57,27 @@ class Business:
 class AnalyzedBusiness(Business):
     marketCalculator = MarketCalculator()
 
-    def __init__(self, name="", uuid=-1, tradeName="", liveStockData=Stock.LiveStockData()):
+    def __init__(self, name="", uuid=-1, tradeName="", stockApi=Stock.StockDataAPI()):
         super().__init__(self, uuid=uuid, name=name, tradeName=tradeName)
 
-        self.liveStockData = liveStockData
+        self.stockApi = stockApi
         self.initLiveData(self.tradeName)
         self._high_sell = -1
         self._low_sell = -1
+
+        self.stockApi.setTradeCallback(self.)
 
     def __str__(self):
         return self.tradeName
 
     def initLiveData(self):
-        self.liveStockData.addTicker(self.tradeName)
+        self.stockApi.addTicker(self.tradeName)
 
     def getStockDataQueue(self):
-        return self.liveStockData.getStockDataQueue(self.tradeName)
+        return self.stockApi.getStockDataQueue(self.tradeName)
+
+    def getBarDataQueue(self):
+        return self.stockApi.getBarQueue(self.tradeName)
 
     def readLiveData(self):
         """

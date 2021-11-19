@@ -1,8 +1,9 @@
 import time
-
+from alpaca_trade_api import Stream
 import websocket
 import multiprocessing as mp, queue
 import json
+import logging
 
 
 # This class provides access to live stock data
@@ -15,15 +16,26 @@ class StockDataAPI:
     Note: The ticker represents a business code on the stock market.
     """
 
+    __config_path = "/home/lance/PycharmProjects/auto-invest/data/config.json"
     __MAX_STOCK_QUEUE_LENGTH = 10  # Max length of the live stock data queue
+
     __stockQueueDict = {}  # List of all of the queues of stock data and associated ticker strings {ticker_str, stockQueue}
+
     __socketProcess = None  # socket process object to be run as a separate process
     __connectionStatusFlag = False
     socketTracing = True  # Set socket tracing to True if you need to debug the web-socket
-    ws = None
+    stream = None
 
     def __init__(self):
         pass
+
+    @classmethod
+    async def printTradeUpdate(cls, tu):
+        print('trade update', tu)
+
+    @classmethod
+    async def printTrade(cls, t):
+        print('trade', t)
 
     def startStockDataConnection(self):
         """
@@ -33,20 +45,47 @@ class StockDataAPI:
         if StockDataAPI.__connectionStatusFlag:  # If there is already another connection we should restart connection to append all tickers
             self.stopDataConnection()
 
+            logging.basicConfig(level=logging.INFO)
         websocket.enableTrace(self.socketTracing)
-        StockDataAPI.ws = websocket.WebSocketApp("wss://ws.finnhub.io?token=c6aqgrqad3ieq36ru6j0", on_message=self.on_message,
-                                         on_error=self.on_error, on_close=self.on_close, on_open=self.on_open)
 
-        StockDataAPI.ws.on_open = self.on_open
-        self.__socketProcess = mp.Process(target=StockDataAPI.ws.run_forever)
+        trader = json.loads(open(self.__config_path).read())['trader-config']
+
+        print(trader['secret_key'])
+        print(trader['key_id'])
+
+        StockDataAPI.stream = Stream(secret_key=trader['secret_key'], key_id=trader['key_id'])
+
+        self.subscribeToCryptoBars()
+        # self.subscribeCryptoTrades()
+
+        self.__socketProcess = mp.Process(target=StockDataAPI.stream.run)
         self.__socketProcess.start()
-        # Set flag so we only do this if disconnected across all instances!
         StockDataAPI.__connectionStatusFlag = True
 
+    def subscribeToCryptoBars(self):
+        for key, value in self.__stockQueueDict.items():
+            StockDataAPI.stream.subscribe_crypto_bars(StockDataAPI.cryptoBarHandler, key)
+
+    @classmethod
+    async def cryptoBarHandler(cls, bar):
+        print('crypto-bar', bar)
+
+    def subscribeCryptoTrades(self):
+        for key, value in self.__stockQueueDict.items():
+            StockDataAPI.stream.subscribe_crypto_trades(StockDataAPI.cryptoTradeHandler, key)
+
+    @classmethod
+    async def cryptoTradeHandler(cls, trade):
+        print('crypto-trades', trade)
+
     def stopDataConnection(self):
-        if StockDataAPI.ws is not None:
-            StockDataAPI.ws.close()
-            StockDataAPI.ws = None
+        """
+        Stops the StockDataAPI Stream
+        @return:
+        """
+        if StockDataAPI.stream is not None:
+            StockDataAPI.stream.stop_ws()
+            StockDataAPI.stream = None
         if self.__socketProcess is not None:
             self.__socketProcess.terminate()
             time.sleep(2)
@@ -80,43 +119,37 @@ class StockDataAPI:
     def getAllStockQueueDict(self):
         return StockDataAPI.__stockQueueDict
 
-    def on_message(self, ws, message):
-        recvdData = json.loads(message)
-        print(recvdData)
-        try:
-            for itm in recvdData['data']:
-                tickerRcvd = itm['s']
-                queueToAppend = self.getStockQueue(tickerRcvd)
-                try:
-                    stockData = StockData(ticker=itm['s'], time=itm['t'], price=itm['p'], volume=itm['v'])
-                    queueToAppend.put(stockData)  # appends the data to the queue
-                except queue.Full: # If the queue is full remove the first item and append the next data point!
-                    queueToAppend.get_nowait()
-                    queueToAppend.put(stockData)  # appends the data to the queue
-                except Exception as e:
-                    print(e)
-        except KeyError:
-            print("Key error Exception")
-        except Exception:
-            print("Undetected Exception")
 
-    def on_error(self, ws, error):
-        pass
+class Bar:
+    """
+    Class to declare a bar object
+    """
+    def __init__(self, exchange, high, low, open, symbol, timestamp, trade_count, volume, vwap):
+        self.exchange = exchange
+        self.high = high
+        self.low = low
+        self.open = open
+        self.symbol = symbol
+        self.timestamp = timestamp
+        self.trade_count = trade_count
+        self.volume = volume
+        self.vwap = vwap
 
-    def on_close(self, exc=None, *args, **kwargs):
-        print("### closed ###")
+    def updateBar(self, barJson):
+        self.exchange = barJson['exchange']
+        self.high = barJson['high']
+        self.low = barJson['low']
+        self.open = barJson['open']
+        self.symbol = barJson['symbol']
+        self.timestamp = barJson['timestamp']
+        self.trade_count = barJson['trade_count']
+        self.volume = barJson['volume']
+        self.vwap = barJson['vwap']
 
-    def on_open(self, ws):
-        """
-        On open subscribe the web socket to a maximum of 50 subscriptions
-        @param ws:
-        @return:
-        """
-        print(StockDataAPI.__stockQueueDict.__str__())
-        for key, val in StockDataAPI.__stockQueueDict.items():
-            print("KEY %s" % key)
-            ws.send(('{"type":"subscribe","symbol":"%s"}' % key))
-
+    def checkBarExchange(self, barJson):
+        if self.exchange == barJson['exchange']:
+            return True
+        return False
 
 class Stock:
     """

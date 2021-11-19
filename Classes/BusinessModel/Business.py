@@ -58,7 +58,7 @@ class AnalyzedBusiness(Business):
     marketCalculator = MarketCalculator()
 
     def __init__(self, name="", uuid=-1, tradeName="", liveStockData=Stock.LiveStockData()):
-        Business.__init__(self, uuid=uuid, name=name, tradeName=tradeName)
+        super().__init__(self, uuid=uuid, name=name, tradeName=tradeName)
 
         self.liveStockData = liveStockData
         self.initLiveData(self.tradeName)

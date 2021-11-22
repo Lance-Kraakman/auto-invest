@@ -2,7 +2,7 @@ from asyncio import QueueEmpty
 import multiprocessing as mp
 from queue import Empty
 
-from Classes.BusinessModel import Stock
+from Classes.BusinessModel import StockApi
 import threading
 import time
 
@@ -13,38 +13,27 @@ def testScript():
     """
     # Creates a liveStockData object all ticker queues are of length 10
     # If the queues are long it will take a longer time to return to the "true live data"
-    stockApiOne = Stock.StockDataAPI()
 
-    stockApiOne.addTicker("BINANCE:AAVEBTC")
-    stockApiOne.startStockDataConnection() # Testing this can be used multiple times between.
-    stockApiOne.addTicker("BINANCE:ACMBTC")
-    stockApiOne.startStockDataConnection()
+    cryptoDataApi = StockApi.cryptoDataAPI()
+    cryptoDataApi.addSymbol("BTCUSD")
 
-    # Get stock data queues
-    acmbtcQueue = stockApiOne.getStockQueue("BINANCE:ACMBTC")
-    aavebtcQueue = stockApiOne.getStockQueue("BINANCE:AAVEBTC")
+    StockApi.cryptoDataAPI.startStockDataConnection()
 
-    stockApiOne.startStockDataConnection()
-
-    stockApiTwo = Stock.StockDataAPI()
-    stockApiTwo.addTicker("BINANCE:BTCUSDT")
-    stockApiTwo.startStockDataConnection()
-    btcnQueue = stockApiTwo.getStockQueue("BINANCE:BTCUSDT")
-
-    queueArray = [acmbtcQueue, aavebtcQueue, btcnQueue]
+    barQueue = cryptoDataApi.getBarQueue("BTCUSD")
+    print(barQueue)
 
     while True:
 
-        for stockQueue in queueArray:
-            try:
-                dataRecvd = stockQueue.get_nowait()
-                print("Recvd Data: " + dataRecvd.price.__str__())
-                print("Recvd Data: " + dataRecvd.volume.__str__())
+        try:
+            dataRecvd = barQueue.get_nowait()
+            if dataRecvd is not None:
+                print("Recvd Data: " + dataRecvd)
+            else:
+                print("NONE")
+        except Exception as e:
+            print(e)
 
-            except Exception:
-                pass
-
-        time.sleep(0.5)
+        time.sleep(0.05)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,4 @@
 import json
-
 import alpaca_trade_api as alpaca
 
 
@@ -18,16 +17,23 @@ class TradingHandler:
     def getAlpacaApi(cls):
         return TradingHandler.alpacaApi
 
-    def marketBuyStocks(self, symbol, amount, price):
+    def marketBuyStocks(self, symbol, amount, price, amountToBuy):
         pass
 
-    def marketSellStocks(self, symbol, amount, price):
+    def marketSellStocks(self, symbol, amount, price, amountToSell):
         pass
 
+    def maxBuyStocks(self, symbol, amount, max_price, amountToBuy):
+        pass
 
+    def minSellStocks(self, symbol, amount, amountToSell):
+        pass
 
+    def updatePending(self):
+        pass
 
-
-
-
-
+    def getPendingTrades(self):
+        """
+        @return: List of all pending trades
+        """
+        pass

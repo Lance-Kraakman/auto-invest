@@ -12,13 +12,22 @@ class TradingHandler:
     __config_path = "/home/lance/PycharmProjects/auto-invest/data/config.json"
 
     def __init__(self):
-        # Start Trader Object
-        trader = json.loads(open(TradingHandler.__config_path).read())['trader-config']
+        self.trader = json.loads(open(TradingHandler.__config_path).read())['trader-config']
 
     @classmethod
     def getAlpacaApi(cls):
         return TradingHandler.alpacaApi
 
-    def buyStocks(self):
+    def marketBuyStocks(self, symbol, amount, price):
         pass
+
+    def marketSellStocks(self, symbol, amount, price):
+        pass
+
+
+
+
+
+
+
 

@@ -5,7 +5,7 @@ import socket
 import multiprocessing as mp
 import json
 
-from Classes.BusinessModel import Stock
+from Classes.BusinessModel import StockApi
 from DesignPatterns import Singleton
 
 
@@ -57,7 +57,7 @@ class Business:
 class AnalyzedBusiness(Business):
     marketCalculator = MarketCalculator()
 
-    def __init__(self, name="", uuid=-1, tradeName="", stockApi=Stock.StockDataAPI()):
+    def __init__(self, name="", uuid=-1, tradeName="", stockApi=StockApi.StockDataAPI()):
         super().__init__(self, uuid=uuid, name=name, tradeName=tradeName)
 
         self.stockApi = stockApi

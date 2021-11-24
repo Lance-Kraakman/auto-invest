@@ -108,6 +108,16 @@ class SupportResistanceEstimator:
         """
         pass
 
+
+class SupportResistLine:
+    def __int__(self):
+        self.length = -1  # Length of the support/resistance line
+        self.occurrences = -1  # Number of
+        self.barList = "" # An array of bars of which there are suffecient hits within the range
+
+
+
+
     """
         We can calulate the suport and resistance by looking at how many times we diverge/get close 
         to a horizontal line(within some reasonable range)
@@ -137,6 +147,12 @@ class AnalyzedBusiness(Business):
     def __str__(self):
         return ""
 
+before i continuue with this make an appliaction getting all of the orders
+then add
+EMA
+SR Lines
+VolumeAnalysis
+MarketCaclualator - Puts all this information together to make decisions based on this
 
 
-
+dd

@@ -29,7 +29,7 @@ class Trade:
         self.timestamp = quoteJson['timestamp']
 
     def __str__(self):
-        return self.symbol.__str__() + " ----TRADE---- : price : " + self.price.__str__() + ": size : " + self.size.__str__() \
+        return self.symbol.__str__() + " ----Trade---- : price : " + self.price.__str__() + ": size : " + self.size.__str__() \
                + " : timestamp : " + self.timestamp.__str__()
 
 
@@ -52,7 +52,7 @@ class LiveTrade(Trade):
         try:
             tradeQueue = cryptoDataAPI.getTradeQueue(self, symbol_str=self.symbol)
             data = tradeQueue.get_nowait()
-            data = data[6:][:-1].replace("\'", "\"")
+            data = self.rawTradeToJsonString(data)
 
         except queue.Empty:
             data = None
@@ -72,6 +72,11 @@ class LiveTrade(Trade):
     def startLiveDataService(self):
         # Start the live data connection
         cryptoDataAPI.startStockDataConnection()
+
+    def rawTradeToJsonString(self, raw_string):
+        raw_string = raw_string.__str__()[6:][:-1].replace("\'", "\"").replace("False", '"False"').replace("True", '"True"')
+        return raw_string
+
 
 
 

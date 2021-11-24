@@ -8,8 +8,13 @@ def main():
 
     while True:
         lastBar = bitcoinData.getUpdatedBar()
+        lastQuote = bitcoinData.getUpdatedQuote()
+        lastTrade = bitcoinData.getUpdatedTrade()
         if lastBar is not None:
             print(lastBar)
+            print(lastTrade)
+            print(lastQuote)
+
         time.sleep(1)
 
 

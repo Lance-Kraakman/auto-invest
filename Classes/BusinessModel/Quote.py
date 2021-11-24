@@ -53,7 +53,7 @@ class LiveQuote(Quote):
         try:
             quotueQueue = cryptoDataAPI.getQuoteQueue(self, symbol_str=self.symbol)
             data = quotueQueue.get_nowait()
-            data = data[6:][:-1].replace("\'", "\"")
+            data = self.rawQuoteToJsonString(data)
 
         except queue.Empty:
             data = None
@@ -73,4 +73,8 @@ class LiveQuote(Quote):
     def startLiveDataService(self):
         # Start the live data connection
         cryptoDataAPI.startStockDataConnection()
+
+    def rawQuoteToJsonString(self, raw_string):
+        raw_string = raw_string.__str__()[6:][:-1].replace("\'", "\"").replace("False", '"False"').replace("True", '"True"')
+        return raw_string
 

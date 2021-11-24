@@ -1,9 +1,9 @@
-from Classes.BusinessModel import LiveStockData
+from Classes.BusinessModel import StockData
 import time
 
 
 def main():
-    bitcoinData = LiveStockData.LiveStockData("BTCUSD")
+    bitcoinData = StockData.LiveStockData("BTCUSD")
     bitcoinData.activateLiveData()
 
     while True:

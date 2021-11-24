@@ -16,6 +16,7 @@ class Quote:
         self.exchange = exchange
         self.symbol = symbol
         self.timestamp = timestamp
+        self.time = None
 
     def updateQuote(self, jsonString):
         quoteJson = json.loads(jsonString)

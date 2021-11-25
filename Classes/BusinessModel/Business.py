@@ -5,7 +5,7 @@ import socket
 import multiprocessing as mp
 import json
 
-from Classes.BusinessModel import StockApi
+from Classes.BusinessModel import StockApi, StockData
 from DesignPatterns import Singleton
 
 
@@ -44,49 +44,101 @@ class MarketCalculator:
         self.derivative = self.calculateDerivative()
 
 
-class Business:
+class Business(StockData.StockData):
 
-    def __init__(self, uuid=-1, name="", tradeName="", tradingStartHours=None, tradingEndHours=None):
+    def __init__(self, name="", symbol="", maxListSize=100, tradingStartHours=None, tradingEndHours=None):
+        super().__init__(symbol=symbol, maxListSize=maxListSize)
+        print("INIT  ")
         self.name = name
-        self.tradeName = tradeName
-        self.uuid = uuid
         self.tradingStartHours = tradingStartHours
         self.tradingEndHours = tradingEndHours
 
 
-class AnalyzedBusiness(Business):
-    marketCalculator = MarketCalculator()
+class EmaModel:
+    """
+    Class stores an erray of emas at different lengths
+    """
+    def __init__(self):
+        self.length = -1
+        self.emaArray = None # emas should be appended to this
 
-    def __init__(self, name="", uuid=-1, tradeName="", stockApi=StockApi.StockDataAPI()):
-        super().__init__(self, uuid=uuid, name=name, tradeName=tradeName)
+    def checkCrossover(self, ema1, ema2):
+        """
+        Checks for crossover between two ema lines
+        @return: -1 if negative crossover, 1 if positive crossover, 0 if no crossover
+        """
+        pass
 
-        self.stockApi = stockApi
-        self.initLiveData(self.tradeName)
-        self._high_sell = -1
-        self._low_sell = -1
+    def addEma(self, ema):
+        self.emaArray.append(ema)
 
-        self.stockApi.setTradeCallback(self.)
 
-    def __str__(self):
-        return self.tradeName
+class Ema:
+    def __init__(self, length, smoothingFactor=2):
+        self.emaLength = length
+        self.emaArray = []
+        self.smoothingFactor = smoothingFactor
 
-    def initLiveData(self):
-        self.stockApi.addTicker(self.tradeName)
-
-    def getStockDataQueue(self):
-        return self.stockApi.getStockDataQueue(self.tradeName)
-
-    def getBarDataQueue(self):
-        return self.stockApi.getBarQueue(self.tradeName)
-
-    def readLiveData(self):
+    def updateEma(self, stockUpdateValue):
         """
 
-        @return: None if no data is read when polling, StockData Object if data object is available from the queue
+        @param stockUpdateValue: The value of the stock price to be used to update the ema
+        @return:
+        """
+
+        # check if there is a previous ema value
+        if len(self.emaArray) < 2:
+            emaYester = 0
+        else:
+            emaYester = self.emaArray[-1]
+
+        ema = (stockUpdateValue * (self.smoothingFactor/(1+self.emaLength))) + emaYester * (1 - (self.smoothingFactor / (1 - self.emaLength)))
+        self.emaArray.append(ema)
+
+
+class SupportResistanceEstimator:
+    def __init__(self):
+        self.resistanceMinPeriod = -1
+        self.resistanceMaxPeriod = -1
+
+    def checkForSR(self, barList):
+        """
+        Checks a list of bars for any potential support/resistance lines
+        @param barList:
+        @return:
         """
         pass
 
 
+class SupportResistLine:
+    def __int__(self):
+        self.length = -1  # Length of the support/resistance line
+        self.occurrences = -1  # Number of
+        self.barList = "" # An array of bars of which there are suffecient hits within the range
 
+
+
+
+    """
+        We can calulate the suport and resistance by looking at how many times we diverge/get close 
+        to a horizontal line(within some reasonable range)
+    """
+
+
+class BusinessAnalyzer:
+    """
+    Business Analyzer analyzers business
+    """
+    def __init__(self):
+        self.businessesList = []  # List of all of the businesses we should analyze
+        self.lastHourlyVolumeAverage = -1
+        self.lastThreeMinuteVolume = -1
+        self.lastVolume = -1
+
+    def analyzeBusiness(self, business):
+        pass
+
+    def updateEmas(self):
+        pass
 
 

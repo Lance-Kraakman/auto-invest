@@ -61,7 +61,7 @@ class LiveBar(Bar):
         try:
             barQueue = cryptoDataAPI.getBarQueue(self, symbol_str=self.symbol)
             data = barQueue.get_nowait()
-            data = data[4:][:-1].replace("\'", "\"")
+            data = self.rawBarToJsonString(data)
 
         except queue.Empty:
             data = None
@@ -82,3 +82,6 @@ class LiveBar(Bar):
         # Start the live data connection
         cryptoDataAPI.startStockDataConnection()
 
+    def rawBarToJsonString(self, raw_string):
+        raw_string = raw_string.__str__()[4:][:-1].replace("\'", "\"").replace("False", '"False"').replace("True", '"True"')
+        return raw_string

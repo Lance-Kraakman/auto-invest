@@ -90,9 +90,9 @@ class cryptoDataAPI:
         barstr = bar.__str__()
         try:
             tradeBar = cls.__stockBarQueueDict[bar.symbol]
-            tradeBar.put(barstr)
+            tradeBar.put_nowait(barstr)
         except queue.Full:
-            tradeBar.get_nowait()
+            tradeBar.get()
             tradeBar.put(barstr)
         except Exception as e:
             print(e)
@@ -104,7 +104,7 @@ class cryptoDataAPI:
             tradeQueue = cls.__stockTradeQueueDict[trade.symbol]
             tradeQueue.put_nowait(tradestr)
         except queue.Full:
-            tradeQueue.get_nowait()
+            tradeQueue.get()
             tradeQueue.put_nowait(tradestr)
         except queue.Empty as e:
             print("empty queue", e)
@@ -124,18 +124,19 @@ class cryptoDataAPI:
         except Exception as e:
             print(e.__str__())
 
-    def stopDataConnection(self):
+    @classmethod
+    def stopDataConnection(cls):
         """
         Stops the StockDataAPI Stream
         @return:
         """
-        if cryptoDataAPI.stream is not None:
-            cryptoDataAPI.stream.stop_ws()
-            cryptoDataAPI.stream = None
-        if self.__socketProcess is not None:
-            self.__socketProcess.terminate()
+        if cls.stream is not None:
+            cls.stream.stop_ws()
+            cls.stream = None
+        if cls.__socketProcess is not None:
+            cls.__socketProcess.terminate()
             time.sleep(2)
-            self.__socketProcess.close()
+            cls.__socketProcess.close()
 
     def setMaxStockQueueLength(self, max_length):
         self.__MAX_STOCK_QUEUE_LENGTH = max_length

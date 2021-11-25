@@ -1,5 +1,6 @@
 from Classes.BusinessModel import Quote, Bar, Trade
 from Classes.BusinessModel import StockApi
+import copy
 
 
 class LiveStockData(object):
@@ -51,7 +52,7 @@ class StockData(LiveStockData):
     """
     This Class is used to keep track of previous data. We can use this to perform market analysis.
     Format: [firstReadItem......, , , , , , LastReadItem]
-    To read the most recent item list.pop(0)
+    To read the most recent return liveBar object
     """
 
     def __init__(self, symbol, maxListSize):
@@ -62,9 +63,9 @@ class StockData(LiveStockData):
         super().__init__(symbol)
 
     def updateStockData(self):
-        bar = self.getUpdatedBar()
-        trade = self.getUpdatedTrade()
-        quote = self.getUpdatedQuote()
+        bar = copy.deepcopy(self.getUpdatedBar())
+        trade = copy.deepcopy(self.getUpdatedTrade())
+        quote = copy.deepcopy(self.getUpdatedQuote())
 
         self.appendBar(bar)
         self.appendTrade(trade)
@@ -81,17 +82,17 @@ class StockData(LiveStockData):
 
     def appendTrade(self, trade):
         if trade is not None:
-            self.checkListLength(self.tradeList)
+            self.checkListLength(self.tradeList, 5)
             self.tradeList.append(trade)
 
     def appendQuote(self, quote):
         if quote is not None:
-            self.checkListLength(self.quoteList)
+            self.checkListLength(self.quoteList, 5)
             self.quoteList.append(quote)
 
     def appendBar(self, bar):
         if bar is not None:
-            self.checkListLength(self.barList)
+            self.checkListLength(self.barList, 5)
             self.barList.append(bar)
 
     def checkListLength(self, my_list, rm_elem):

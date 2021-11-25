@@ -44,11 +44,12 @@ class MarketCalculator:
         self.derivative = self.calculateDerivative()
 
 
-class Business:
+class Business(StockData.StockData):
 
-    def __init__(self, name="", tradeSymbol="", tradingStartHours=None, tradingEndHours=None):
+    def __init__(self, name="", symbol="", maxListSize=100, tradingStartHours=None, tradingEndHours=None):
+        super().__init__(symbol=symbol, maxListSize=maxListSize)
+        print("INIT  ")
         self.name = name
-        self.tradeSymbol = tradeSymbol
         self.tradingStartHours = tradingStartHours
         self.tradingEndHours = tradingEndHours
 
@@ -124,35 +125,20 @@ class SupportResistLine:
     """
 
 
-class BusinessAnalyzer(StockData.StockData):
-    def __init__(self, symbol, maxListSize=1000):
-        super().__init__(symbol, maxListSize)
-
+class BusinessAnalyzer:
+    """
+    Business Analyzer analyzers business
+    """
+    def __init__(self):
+        self.businessesList = []  # List of all of the businesses we should analyze
         self.lastHourlyVolumeAverage = -1
         self.lastThreeMinuteVolume = -1
         self.lastVolume = -1
+
+    def analyzeBusiness(self, business):
+        pass
 
     def updateEmas(self):
         pass
 
 
-class AnalyzedBusiness(Business):
-
-    marketCalculator = MarketCalculator()
-
-    def __init__(self, name="", tradeSymbol=""):
-        self.BusinessAnalyzer = BusinessAnalyzer(self.tradeSymbol, maxListSize=100)
-        super().__init__(name=name, tradeSymbol=tradeSymbol)
-
-    def __str__(self):
-        return ""
-
-before i continuue with this make an appliaction getting all of the orders
-then add
-EMA
-SR Lines
-VolumeAnalysis
-MarketCaclualator - Puts all this information together to make decisions based on this
-
-
-dd

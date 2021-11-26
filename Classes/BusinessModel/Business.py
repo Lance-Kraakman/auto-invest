@@ -4,6 +4,9 @@ import websocket
 import socket
 import multiprocessing as mp
 import json
+from matplotlib import pyplot as plt, pyplot
+import matplotlib
+import time
 
 from Classes.BusinessModel import StockApi, StockData
 from DesignPatterns import Singleton
@@ -53,47 +56,68 @@ class Business(StockData.StockData):
         self.tradingStartHours = tradingStartHours
         self.tradingEndHours = tradingEndHours
 
+    def __str__(self):
+        return "Name: " + self.name + " : Symbol: " + self.symbol
+
 
 class EmaModel:
     """
     Class stores an erray of emas at different lengths
     """
     def __init__(self):
-        self.length = -1
-        self.emaArray = None # emas should be appended to this
+        self.emaList = []
 
-    def checkCrossover(self, ema1, ema2):
+    def checkCrossover(self, ema1, ema2, crossoverLength):
         """
         Checks for crossover between two ema lines
         @return: -1 if negative crossover, 1 if positive crossover, 0 if no crossover
         """
         pass
 
-    def addEma(self, ema):
-        self.emaArray.append(ema)
+    def addEma(self, length, smoothingFactor=2):
+        ema = Ema(length, smoothingFactor)
+        self.emaList.append(ema)
+
+    def updateEmas(self, lastBar):
+        for ema in self.emaList:
+            ema.updateEma(lastBar)
 
 
 class Ema:
     def __init__(self, length, smoothingFactor=2):
+        self.previousBarTimestamp = None
         self.emaLength = length
-        self.emaArray = []
         self.smoothingFactor = smoothingFactor
+        self.emaArray = []
 
-    def updateEma(self, stockUpdateValue):
+    def updateEma(self, bar):
         """
 
+        @param bar:
         @param stockUpdateValue: The value of the stock price to be used to update the ema
         @return:
         """
+        if (bar.timestamp != self.previousBarTimestamp) and (bar.exchange == "CBSE"):
+            # check if there is a previous ema value
+            if len(self.emaArray) < 1:
+                emaYester = bar.close
+            else:
+                emaYester = self.emaArray[-1]
 
-        # check if there is a previous ema value
-        if len(self.emaArray) < 2:
-            emaYester = 0
+            ema = (bar.close*(self.smoothingFactor/(1+self.emaLength))) + (emaYester*(1 - (self.smoothingFactor / (1 + self.emaLength))))
+            self.emaArray.append(ema)
+            print(bar, self)
+            self.previousBarTimestamp = bar.timestamp  # update a copy of the previous data
+
+    def getLatestEma(self):
+        return self.emaArray[-1]
+
+    def __str__(self):
+        if len(self.emaArray) > 1:
+            return "Last Ema: " + self.getLatestEma().__str__() + " EMA yesterday: " + self.emaArray[-2].__str__() + " EMA Length: " + self.emaLength.__str__()
         else:
-            emaYester = self.emaArray[-1]
+            return "Last Ema: " + self.getLatestEma().__str__() + " EMA Length: " + self.emaLength.__str__()
 
-        ema = (stockUpdateValue * (self.smoothingFactor/(1+self.emaLength))) + emaYester * (1 - (self.smoothingFactor / (1 - self.emaLength)))
-        self.emaArray.append(ema)
 
 
 class SupportResistanceEstimator:
@@ -116,29 +140,71 @@ class SupportResistLine:
         self.occurrences = -1  # Number of
         self.barList = "" # An array of bars of which there are suffecient hits within the range
 
-
-
-
     """
         We can calulate the suport and resistance by looking at how many times we diverge/get close 
         to a horizontal line(within some reasonable range)
     """
 
 
-class BusinessAnalyzer:
-    """
-    Business Analyzer analyzers business
-    """
+class AnalyzedBusinessModel:
     def __init__(self):
-        self.businessesList = []  # List of all of the businesses we should analyze
+        self.analyzedBusinessList = []
+
+    def addAnalyzedBusiness(self, analyzedBusiness):
+        self.analyzedBusinessList.append(analyzedBusiness)
+
+    def updateAllBusinessData(self):
+        for business in self.analyzedBusinessList:
+            business.updateStockData()
+
+    def activateAllBusinesses(self):
+        for business in self.analyzedBusinessList:
+            business.activateLiveData()
+
+    def updateAllEmas(self):
+        for analyzedBusiness in self.analyzedBusinessList:
+            analyzedBusiness.emaModel.updateEmas(analyzedBusiness.getLastBar())  # updates all of the Emas in the
+
+
+class BusinessPlotter:
+    def __init__(self, businessToPlot):
+        self.__plotFigure = pyplot.figure()
+        self.businessToPlot = businessToPlot
+        self.line, = None
+        self.animation = None
+        self.y_data = []
+        self.y_data = []
+
+    def setBusiness(self, business):
+        self.businessToPlot = business
+
+    def updatePlotter(self):
+        pass
+
+    def initPlotter(self):
+        for bar in self.businessToPlot.barList:
+
+        pyplot.plot(self.x_data, self.y_data, '-')
+
+class AnalyzedBusiness(Business):
+    """
+    Analyzed Business. Represents a business that has analysis attached to it
+    """
+    def __init__(self, name="", symbol="", maxListSize=100, tradingStartHours=None, tradingEndHours=None):
+        super().__init__(name=name, symbol=symbol, maxListSize=maxListSize, tradingStartHours=tradingStartHours, tradingEndHours=tradingEndHours)
+        self.emaModel = EmaModel()  # every analyzed business has a ema model representing all of the ema types
+
         self.lastHourlyVolumeAverage = -1
         self.lastThreeMinuteVolume = -1
         self.lastVolume = -1
 
+    def analyzeBusiness(self):
+        self.analyzeEmas()
+
     def analyzeBusiness(self, business):
         pass
 
-    def updateEmas(self):
-        pass
+
+
 
 

@@ -1,15 +1,53 @@
+import time
+
 from Classes.BusinessModel import Business
+from Classes.StockModel import TradingHandler
 
 
-class StockPurchasingProcessor:
+class StockBot:
+    def __init__(self, analyzedBusinessList=[]):
+        self.analyzedBusinessModel = Business.AnalyzedBusinessModel()  # array of analyzed businesses
 
-    stockData = Business.LiveStockData(stockQueueLength=10)
+        self.orderList = []  # list of all of the current trades
+        self.trader = TradingHandler.TradingHandler()
+        self.account = self.trader.getAccount()  # gets and updates the account
 
-    def __init__(self):
-        pass
+    def updateAccount(self):
+        self.account = self.trader.getAccount()
+
+    def getAccount(self):
+        return self.account
 
     def config(self):
-        pass
+        # create and append a list of analyzed businesses. Config 3 Emas to each
+        analyzedBusinessList = StockBot.createBusinessList([("BITCOIN", "BTCUSD"), ("ETHURUM", "ETHUSD")])
+        for analyzedBusiness in analyzedBusinessList:
+            analyzedBusiness.emaModel.addEma(6, 2)
+            analyzedBusiness.emaModel.addEma(9, 2)
+            analyzedBusiness.emaModel.addEma(15, 2)
+            self.analyzedBusinessModel.addAnalyzedBusiness(analyzedBusiness)
 
-    def runApp(self):
-        pass
+        self.analyzedBusinessModel.activateAllBusinesses()
+
+    def run_app(self):
+        time.sleep(3)  # allow socket init -> should use await but maybe not right now
+        while True:
+            self.analyzedBusinessModel.updateAllBusinessData()
+            self.analyzedBusinessModel.updateAllEmas()
+
+    @classmethod
+    def createBusinessList(cls, businessTupleList=[]):
+        businessList = []
+        for itm in businessTupleList:
+            name, symbol = itm
+            business = Business.AnalyzedBusiness(name=name, symbol=symbol, maxListSize=1000)
+            businessList.append(business)
+        return businessList
+
+
+if __name__ == "__main__":
+    stockBot = StockBot()
+    stockBot.config()
+    stockBot.run_app()
+
+

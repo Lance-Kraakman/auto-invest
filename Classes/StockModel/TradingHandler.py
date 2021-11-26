@@ -80,6 +80,12 @@ class TradingHandler:
                     print(e)
         return finalList
 
+    def getBusinessPosition(self, symbol):
+        pos = Position.Position()
+        pos_raw = self.getAlpacaApi().get_position(symbol)
+        pos.updatePosition(pos_raw)
+        return pos
+
     def getOpenOrders(self):
         order_list = self.getAlpacaApi().list_orders(status="open")
         final_list = []
@@ -92,9 +98,12 @@ class TradingHandler:
                 print(e)
 
     def getAccount(self):
+        """
+        Gets and updates the account
+        @return: account object
+        """
         acc = Account.Account()
         data = self.getAlpacaApi().get_account().__str__()
-        print(data)
         acc.updateAccount(data)
         return acc
 

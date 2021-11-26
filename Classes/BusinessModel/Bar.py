@@ -8,7 +8,8 @@ class Bar:
     Class to declare a bar object
     """
 
-    def __init__(self, exchange, high, low, open, symbol, timestamp, trade_count, volume, vwap):
+    def __init__(self, close, exchange, high, low, open, symbol, timestamp, trade_count, volume, vwap):
+        self.close = close
         self.exchange = exchange
         self.high = high
         self.low = low
@@ -21,6 +22,7 @@ class Bar:
 
     def updateBar(self, barJson):
         barJson = json.loads(barJson)
+        self.close = barJson['close']
         self.exchange = barJson['exchange']
         self.high = barJson['high']
         self.low = barJson['low']
@@ -48,8 +50,8 @@ class LiveBar(Bar):
         startLiveDataService() function is called.
     """
 
-    def __init__(self, exchange="", high=-1, low=-1, open=-1, symbol="", timestamp=-1, trade_count=-1, volume=-1, vwap=-1):
-        super().__init__(exchange=exchange, high=high, low=low, open=open, symbol=symbol, timestamp=timestamp,
+    def __init__(self, close=-1, exchange="", high=-1, low=-1, open=-1, symbol="", timestamp=-1, trade_count=-1, volume=-1, vwap=-1):
+        super().__init__(close=close, exchange=exchange, high=high, low=low, open=open, symbol=symbol, timestamp=timestamp,
                          trade_count=trade_count, volume=volume, vwap=vwap)
         print("symbol: %s" % self.symbol)
         self.updated = False

@@ -1,6 +1,8 @@
-from Classes.BusinessModel import Quote, Bar, Trade
+from Classes.BusinessModel import Quote, Bar, Trade, Position
 from Classes.BusinessModel import StockApi
 import copy
+from Classes.StockModel import TradingHandler
+
 
 
 class LiveStockData(object):
@@ -59,7 +61,9 @@ class StockData(LiveStockData):
         self.barList = []
         self.quoteList = []
         self.tradeList = []
+        self.currentPosition = None
         self.maxListSize = maxListSize
+        self.trader = TradingHandler.TradingHandler()
         super().__init__(symbol)
 
     def updateStockData(self):
@@ -70,6 +74,17 @@ class StockData(LiveStockData):
         self.appendBar(bar)
         self.appendTrade(trade)
         self.appendQuote(quote)
+
+    def getCurrentPosition(self):
+        """
+        gets and updates the current position
+        @return: current position
+        """
+        pos_raw = self.trader.get_position(self.symbol)
+        pos = Position.Position()
+        pos.updatePosition(pos_raw)
+        self.currentPosition = pos
+        return self.currentPosition
 
     def getLastBar(self):
         return self.liveBar

@@ -18,6 +18,9 @@ class TradingHandler:
         TradingHandler.alpacaApi = alpaca.REST(self.trader['key_id'], self.trader['secret_key'],
                                                self.trader['base_api'], 'v2')
 
+    def getMinuteBars(self, symbol, minutes):
+        bars = self.alpacaApi.get_barset('bars', 'minute', minutes)
+
     def getAlpacaApi(self):
         return TradingHandler.alpacaApi
 

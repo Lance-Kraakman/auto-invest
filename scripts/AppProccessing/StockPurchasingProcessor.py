@@ -7,7 +7,7 @@ from Classes.StockModel import TradingHandler
 class StockBot:
     def __init__(self, analyzedBusinessList=[]):
         self.analyzedBusinessModel = Business.AnalyzedBusinessModel()  # array of analyzed businesses
-
+        self.plotter = Business.BusinessPlotter()  # Initialize the business plotter
         self.orderList = []  # list of all of the current trades
         self.trader = TradingHandler.TradingHandler()
         self.account = self.trader.getAccount()  # gets and updates the account
@@ -27,13 +27,22 @@ class StockBot:
             analyzedBusiness.emaModel.addEma(15, 2)
             self.analyzedBusinessModel.addAnalyzedBusiness(analyzedBusiness)
 
+        busi = self.analyzedBusinessModel.getBusiness("BTCUSD")
+        if busi is not None:
+            print("Added Business", busi)
+            self.plotter.setBusiness(busi)
+        self.plotter.startPlotter()
         self.analyzedBusinessModel.activateAllBusinesses()
 
     def run_app(self):
         time.sleep(3)  # allow socket init -> should use await but maybe not right now
+        i = 0
         while True:
             self.analyzedBusinessModel.updateAllBusinessData()
             self.analyzedBusinessModel.updateAllEmas()
+            time.sleep(1)
+            i += 1
+            self.plotter.updatePlot()
 
     @classmethod
     def createBusinessList(cls, businessTupleList=[]):

@@ -8,7 +8,7 @@ class Bar:
     Class to declare a bar object
     """
 
-    def __init__(self, close, exchange, high, low, open, symbol, timestamp, trade_count, volume, vwap):
+    def __init__(self, close=-1, exchange="CBSE", high=-1, low=-1, open=-1, symbol="", timestamp="", trade_count=-1, volume=-1, vwap=-1):
         self.close = close
         self.exchange = exchange
         self.high = high
@@ -77,7 +77,14 @@ class LiveBar(Bar):
         else:
             self.updated = False
 
+    def checkUpdateAndExchange(self, exchange):
+        return (self.businessToPlot.liveBar.isUpdated()) and (self.businessToPlot.liveBar.exchange.lower() == exchange.lower())
+
     def isUpdated(self):
+        """
+        If we have recvd none we have already polled the bar object
+        @return:
+        """
         return self.updated
 
     def startLiveDataService(self):

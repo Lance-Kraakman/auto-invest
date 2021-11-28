@@ -13,7 +13,7 @@ def app():
 
     while True:
         updateAllBusinessData(myBusinesses)
-        time.sleep(0.05)
+        time.sleep(1)
 
         # need to work out how the app should be integrated/processing
 

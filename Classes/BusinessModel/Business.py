@@ -1,12 +1,3 @@
-import math
-import time
-
-import numpy as np
-import requests
-import websocket
-import socket
-import multiprocessing as mp
-import json
 from matplotlib import pyplot as plt, pyplot
 import multiprocessing as mp
 
@@ -141,92 +132,122 @@ class SupportResistance:
     searchBarList = []  # Price points for the static function to use to search the
     maxSearchSize = 50
     percent = 0.005
-    highBracket = -1
-    lowBracket = -1
 
-    def __init__(self, barHigh, barLow, maxSrSize=1000, maxNoEntryExit=30, barList=[], percent=0.1, isActive=True):
+
+    SUPPORT = True
+    RESISTANCE = False
+
+    def __init__(self, highBracket=-1, lowBracket=-1, srMiddle=-1, srType=-1, maxSrSize=1000, maxNoEntryExit=30, barList=[], percent=0.1,
+                 isActive=True, SrLength=0):
         self.barList = barList
-        self.barHigh = barHigh
-        self.barLow = barLow
+        self.highBracket = highBracket
+        self.lowBracket = lowBracket
         self.maxSrSize = maxSrSize
         self.isActive = isActive
         self.maxNoEntryExit = maxNoEntryExit
         self.isIn = False
         self.prevIn = False
-        self.noChangeCount = 0
-        self.SrPeakCount = 0
-        self.SrLength = 0
-        self.mean = 0
+        self.withoutCount = 0
+        self.SrPeakCount = 2
+        self.SrLength = SrLength
+        self.srMiddle = srMiddle # the middle
         self.setPercent(percent=percent)
         self.SrQuality = 0
+        self.srType = srType
 
     def setPercent(self, percent):
         SupportResistance.SrPercent = percent / 100
 
     def calcQual(self):
         if self.SrLength > 0:
-            return self.peaks / self.SrLength
+            return self.SrPeakCount / self.SrLength
         return None
 
-    def updateSr(self):
+    def __breakAndExit(self):
+        self.searchBarList = []
+        self.isActive = False
+
+    def updateSr(self, updateBar):
+        self.barList.insert(0, updateBar) # Insert a bar to the front of the list
+
+    def getMinOrMaxBar(self, min=True): # returns the value of the lowest bar
+        """
+        @param min: Used to determine whether to return the minimum or maximum closing bar
+        @return: If min is true the function will return the bar with the lowest closing price.
+            Else it will return the max
+        """
+        barPriceRef = self.barList[0].close
+        for bar in self.barList:
+            if bar.close < barPriceRef and min:
+                barPriceRef = bar.close
+            elif bar.close > barPriceRef and not min:
+                barPriceRef = bar.close
+        return barPriceRef
+
+    def updateBracketRange(self):
+        """
+        This function looks at all of the data in the list of the support resistance object
+        Note: This should be called when trying to detect a new sr line.
+        @return:
+        """
+        if self.srType:  # if sr is of type support use minumum
+            self.srMiddle = self.getMinOrMaxBar(True)
+        else:
+            self.srMiddle = self.getMinOrMaxBar(False)
+
+        # Calculate and update the brackets
+        self.highBracket = (1+self.percent) * self.srMiddle
+        self.lowBracket = (1-self.percent) * self.srMiddle
+
+    def checkInRange(self, bar):
+        """
+        @param bar:
+        @return: True if the bar is inside of the bracket range
+        """
+        close = bar.close
+        if (close > self.lowBracket) and (close<self.highBracket):
+            self.isIn = True
+            return True
+        return False
+
+    def detectSupportAndResistance(self):
+        """"
+        WARNING: This function will alter class parameters.
+        If the instance is not active, try to detect a support or resistance line.
+        Using this at the same time as update bar will caise incorrect results or issues.
+        """
+        self.updateBracketRange()  # make sure the bracket range is up to date
+        self.SrPeakCount = 0
+
+        for bar in self.barList:
+            if self.checkInRange(bar) and not self.prevIn:
+                self.SrPeakCount += 1
+
+        self.prevIn = self.isIn
+
+    def addBar(self):
         pass
 
-    @classmethod
-    def detectSupportResistance(cls, updateBar, lineType=True):
-        """
-        if lineType is True -> support. if linetype is false -> resistance
-        @return: SupportResistnace object if SR line is detected, None otherwise
-         """
-        if len(cls.searchBarList) > cls.maxSearchSize:
-            cls.searchBarList = cls.searchBarList[-5:]
-        cls.searchBarList.append(updateBar)  # update the bar object
+    def __str__(self):
+        return "srType: " + self.srType.__str__() + " Active: " + self.isActive.__str__() + " Sr Middle: " + self.srMiddle.__str__() + " Peak Count :" + self.SrPeakCount.__str__()
 
-        max = 0
-        min = cls.searchBarList[0].close
-        for bar in cls.searchBarList[::-1]:
-            if bar.close > max:
-                max = bar.close
-            if bar.close < min:
-                min = bar.close
 
-        if lineType:
-            cls.highBracket = (1 + cls.percent) * max
-            cls.lowBracket = (1 - cls.percent) * max
-        else:
-            cls.highBracket = (1 + cls.percent) * min
-            cls.lowBracket = (1 - cls.percent) * min
+class SupportResistanceModel:
+    """
+        Class Purpose is to keep an array of support resistance lines for a stock market.
+        The Class should implement a support resistnace list which cretates and destorys SupportRessistance Objects based
+        on maximum timeframes.
 
-        peakCount = 0
-        barAppend = []
-        withoutCount = 0
-        prevIsIn = False
+        Support/Ressistance lines are based on sizes/lengths.
+        In general we assume minute bars
+    """
 
-        for bar in cls.searchBarList[::-1]:
-            barAppend.append(bar)
-            if (bar.close < cls.highBracket) and (bar.close > cls.lowBracket):
-                isIn = True
-            else:
-                isIn = False
+    def __init__(self):
+        self.supportBars = []
+        self.resistanceBars = []
 
-            if prevIsIn != isIn:
-                peakCount += 1
-                withoutCount = 0
-            else:
-                withoutCount += 1
-
-            if withoutCount > 10:
-                cls.searchBarList = []
-                break
-
-            if peakCount >= 3:
-                newSR = SupportResistance(cls.highBracket, cls.lowBracket, barList=barAppend[::-1])
-                cls.searchBarList = []
-                return newSR
-
-            print(prevIsIn, isIn, peakCount, withoutCount, cls.highBracket, cls.lowBracket, bar.close, lineType)
-            prevIsIn = isIn
-
-        return None
+    def detectSupportResistance(self, updateBar, lineType=True, percent=0.05, peaks=3, maxSearchLength=10):
+        pass
 
 
 class AnalyzedBusinessModel:

@@ -40,7 +40,7 @@ class Bar:
 
     def __str__(self):
         return self.symbol.__str__() + " ----Bar---- : exchange : " + self.exchange.__str__() + " : high : " + self.high.__str__() + ": low : " + self.low.__str__() \
-               + " : open : " + self.open.__str__() + " : timestamp : " + self.timestamp.__str__()
+               + " : open : " + self.open.__str__() + " : close :" + self.close.__str__() + " : timestamp : " + self.timestamp.__str__()
 
 
 # Now i need to implement LiveBar here
